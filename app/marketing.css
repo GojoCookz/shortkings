@@ -600,3 +600,50 @@ body {
 .recruit-note { font-family: var(--font-body); font-size: 0.78rem; color: var(--text-dim); margin-top: 14px; text-align: center; line-height: 1.6; }
 .invited-badge { align-items: center; justify-content: center; gap: 8px; background: rgba(124,58,237,0.12); border: 1px solid var(--purple); color: var(--text); border-radius: 30px; font-size: 0.82rem; padding: 8px 16px; max-width: fit-content; margin: 0 auto 28px; }
 @media (max-width: 760px) { .join-grid { grid-template-columns: 1fr; } }
+
+/* ===== WALLET CONNECT BUTTON + DROPDOWN ===== */
+.wallet-btn {
+  font-family: var(--font-display);
+  /* min-width so the label doesn't jump between "Connect" and "8.4M SHORT" */
+  min-width: 120px;
+  text-align: center;
+}
+.wallet-btn:disabled { opacity: 0.7; cursor: default; }
+.wallet-wrap { position: relative; display: inline-block; }
+.wallet-menu {
+  position: absolute;
+  right: 0;
+  top: calc(100% + 8px);
+  z-index: 200;
+  min-width: 180px;
+  background: var(--bg-card);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 12px;
+  padding: 8px;
+  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.5);
+}
+.wallet-menu-addr {
+  font-family: monospace;
+  font-size: 0.8rem;
+  color: var(--text-muted);
+  padding: 8px 10px 10px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+  margin-bottom: 6px;
+}
+.wallet-menu-item {
+  display: block;
+  width: 100%;
+  text-align: left;
+  background: transparent;
+  border: none;
+  color: var(--text);
+  font-family: var(--font-body);
+  font-size: 0.85rem;
+  font-weight: 600;
+  padding: 9px 10px;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s;
+}
+.wallet-menu-item:hover { background: rgba(255, 255, 255, 0.05); }
+.wallet-menu-item.danger:hover { color: var(--hot-pink); }

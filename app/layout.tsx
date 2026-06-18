@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import "./globals.css";
 import "./marketing.css";
+import SolanaProvider from "@/components/SolanaProvider";
 
 export const metadata: Metadata = {
   title: "$SHORT — The Short Kings Hotline",
@@ -27,7 +28,9 @@ export default function RootLayout({
           rel="stylesheet"
         />
       </head>
-      <body>{children}</body>
+      <body>
+        <SolanaProvider>{children}</SolanaProvider>
+      </body>
     </html>
   );
 }

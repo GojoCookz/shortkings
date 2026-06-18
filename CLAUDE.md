@@ -45,6 +45,10 @@ Three entry points in [lib/supabase/](lib/supabase/) — use the right one:
 - `server.ts` → `await createClient()` for Server Components / Route Handlers / Server Actions. **It's async** (Next 15 `cookies()` is async). Writing cookies from a Server Component is swallowed (middleware refreshes); cookie writes only land in route handlers/actions.
 - `middleware.ts` → `updateSession()`, called from the root `middleware.ts`. Per `@supabase/ssr` rules: don't insert logic between `createServerClient` and `getUser()`, and always return the `supabaseResponse` (or copy its cookies) so refreshed auth cookies survive.
 
+## Wallet connect (Solana)
+
+The top-right nav "Connect" button ([components/WalletButton.tsx](components/WalletButton.tsx)) uses the **Solana Wallet Adapter** — note $SHORT is a **Solana** token, so this is *not* RainbowKit/EVM. Wallet context is app-wide via [components/SolanaProvider.tsx](components/SolanaProvider.tsx) (wrapped around `{children}` in the layout); wallets are auto-detected through the Wallet Standard (empty `wallets={[]}` array — don't hardcode adapters). Connected, the button reads the wallet's balance of the $SHORT mint and shows it formatted (`8.4M SHORT`). RPC endpoint is `NEXT_PUBLIC_SOLANA_RPC` (blank → public mainnet-beta, rate-limited — use Helius/QuickNode in prod). The mint address is duplicated in `WalletButton.tsx` as a `PublicKey` and as the bags.fm contract string in `page.tsx` — keep them in sync.
+
 ## Styling
 
 Plain CSS, no framework. The theme (CSS variables, all landing components) is in [app/marketing.css](app/marketing.css) — migrated verbatim from the original `index.html` `<style>` blocks, including the formerly-inline dex-embed / earnings-panel / join-grid styles. Auth + dashboard styling is in [app/auth.css](app/auth.css). Change colors/fonts via the `:root` vars, not inline.

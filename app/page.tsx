@@ -4,6 +4,7 @@ import { cookies } from "next/headers";
 import { createClient } from "@/lib/supabase/server";
 import LandingEffects from "@/components/LandingEffects";
 import BeehiivForm from "@/components/BeehiivForm";
+import WalletButton from "@/components/WalletButton";
 
 const BAGS = "https://bags.fm/A8cMYsw7YaGmB1htaeF9bww4nGjN1czti5RNh2viBAGS";
 const CONTRACT = "A8cMYsw7YaGmB1htaeF9bww4nGjN1czti5RNh2viBAGS";
@@ -95,7 +96,7 @@ export default async function Home() {
             {isLoggedIn ? "Dashboard" : "Log in"}
           </Link>
           <a href="#buy">Buy</a>
-          <a href={BAGS} target="_blank" rel="noopener" className="btn btn-gold topnav-cta">Buy $SHORT</a>
+          <WalletButton />
         </div>
       </nav>
 

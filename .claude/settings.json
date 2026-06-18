@@ -15,7 +15,12 @@
       "Bash(cat .claude/settings.json)",
       "Bash(cat .claude/settings.local.json)",
       "Bash(git rm *)",
-      "Bash(git commit -q -m ' *)"
+      "Bash(git commit -q -m ' *)",
+      "Bash(git remote *)",
+      "Bash(git ls-remote *)",
+      "Bash(git push *)",
+      "Bash(npm install *)",
+      "Bash(grep -E \"\\\\.env\\\\.local$|settings\\\\.local\")"
     ]
   }
 }

@@ -33,6 +33,7 @@ phases — not built yet.
    | `NEXT_PUBLIC_SUPABASE_URL` | your project URL |
    | `NEXT_PUBLIC_SUPABASE_ANON_KEY` | your anon/public key |
    | `NEXT_PUBLIC_SITE_URL` | `http://localhost:3000` locally |
+   | `NEXT_PUBLIC_SOLANA_RPC` | Solana RPC for wallet balances; blank = public mainnet-beta |
    | `SUPABASE_SERVICE_ROLE_KEY` | leave blank for Phase 1 |
 
    `.env.local` is gitignored. Never commit real keys — especially the service role key.
@@ -74,6 +75,22 @@ phases — not built yet.
    server-side, writes a `referrals` row, then the cookie is cleared.
 4. `/dashboard` shows the user's **real** code, share link, and live recruit
    count (`my_referral_count`) — backed by the DB, not random client noise.
+
+## Wallet connect ($SHORT balance)
+
+The top-right nav button is a Solana wallet connector ([components/WalletButton.tsx](components/WalletButton.tsx)):
+
+- Disconnected → **Connect** (opens the wallet-adapter modal; auto-detects
+  Phantom, Solflare, Backpack, Coinbase, etc. via the Wallet Standard).
+- Connected → reads the wallet's balance of the $SHORT mint
+  (`A8cMYsw7…BAGS`) via `getParsedTokenAccountsByOwner` and shows it on the
+  button, e.g. **`8.4M SHORT`**. Clicking opens a dropdown to copy the address
+  or disconnect.
+
+Wallet context is provided app-wide by [components/SolanaProvider.tsx](components/SolanaProvider.tsx).
+Balance reads use `NEXT_PUBLIC_SOLANA_RPC` — leave it blank for the public
+endpoint while testing, but set a Helius/QuickNode URL for production (the
+public RPC rate-limits and sometimes blocks browser balance reads).
 
 ## End-to-end test
 
