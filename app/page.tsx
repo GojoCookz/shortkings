@@ -10,6 +10,48 @@ const BAGS = "https://bags.fm/A8cMYsw7YaGmB1htaeF9bww4nGjN1czti5RNh2viBAGS";
 const CONTRACT = "A8cMYsw7YaGmB1htaeF9bww4nGjN1czti5RNh2viBAGS";
 const BEEHIIV_FORM = "78243337-c29b-4d55-8c4e-49f7bc16c71b";
 
+function BagsLogo() {
+  return (
+    <svg
+      className="bags-logo"
+      viewBox="0 0 512 512"
+      role="img"
+      aria-label="Bags logo"
+      xmlns="http://www.w3.org/2000/svg"
+    >
+      <defs>
+        <linearGradient id="bagGrad" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0" stopColor="#3dff63" />
+          <stop offset="1" stopColor="#05c236" />
+        </linearGradient>
+      </defs>
+      {/* cinched top / "lips" */}
+      <path
+        d="M171 158 C150 116 152 74 193 58 C215 49 233 74 256 74 C279 74 297 49 319 58 C360 74 362 116 341 158 Z"
+        fill="url(#bagGrad)"
+      />
+      {/* bag body */}
+      <path
+        d="M188 156 C123 203 74 271 74 332 C74 420 153 472 256 472 C359 472 438 420 438 332 C438 271 389 203 324 156 Z"
+        fill="url(#bagGrad)"
+      />
+      {/* dollar sign */}
+      <text
+        x="256"
+        y="348"
+        textAnchor="middle"
+        dominantBaseline="central"
+        fontSize="235"
+        fontWeight="900"
+        fontFamily="Arial, Helvetica, sans-serif"
+        fill="#ffffff"
+      >
+        $
+      </text>
+    </svg>
+  );
+}
+
 function XIcon({ size = 16 }: { size?: number }) {
   return (
     <svg width={size} height={size} viewBox="0 0 24 24" fill="currentColor">
@@ -225,8 +267,9 @@ export default async function Home() {
 
       {/* ===== 6. CHARITY TRACKER ===== */}
       <section className="section charity-section" id="charity">
+        <BagsLogo />
         <div className="section-tag">Short kings give back</div>
-        <h2 className="section-title">Charity <span className="gold-text">Tracker</span></h2>
+        <h2 className="section-title">Bags Fee&apos;s <span className="gold-text">Tracker</span></h2>
         <p className="section-subtitle">Every trade pays royalties, and those royalties auto-split to the wallets below — fixed percentages, set on-chain through bags.fm. No insider cuts.</p>
 
         <div className="earnings-panel fade-up">

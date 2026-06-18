@@ -20,7 +20,9 @@
       "Bash(git ls-remote *)",
       "Bash(git push *)",
       "Bash(npm install *)",
-      "Bash(grep -E \"\\\\.env\\\\.local$|settings\\\\.local\")"
+      "Bash(grep -E \"\\\\.env\\\\.local$|settings\\\\.local\")",
+      "Bash(curl -s https://api.mainnet-beta.solana.com -X POST -H 'Content-Type: application/json' -d '{\"jsonrpc\":\"2.0\",\"id\":1,\"method\":\"getTokenLargestAccounts\",\"params\":[\"A8cMYsw7YaGmB1htaeF9bww4nGjN1czti5RNh2viBAGS\"]}')",
+      "Read(//c/Users/kylep/AppData/Local/Temp/**)"
     ]
   }
 }

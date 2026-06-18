@@ -412,6 +412,13 @@ body {
 
 /* ===== 6. CHARITY TRACKER ===== */
 .charity-section { text-align: center; }
+.bags-logo {
+  width: 92px;
+  height: auto;
+  display: block;
+  margin: 0 auto 18px;
+  filter: drop-shadow(0 6px 18px rgba(10, 220, 70, 0.35));
+}
 .charity-total {
   font-family: var(--font-display);
   font-size: clamp(2.8rem, 6vw, 4.5rem);
