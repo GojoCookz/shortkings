@@ -1,0 +1,125 @@
+# Short Kings ($SHORT) — Web App
+
+Next.js (App Router, TypeScript) + Supabase. The marketing landing page plus a
+**real** referral system: accounts, server-generated referral codes, and a
+referral ledger backed by Postgres.
+
+This is **Phase 1** of the backend spec (`shortkings-backend-spec.md`): Auth +
+Real Referrals. XP/streaks, Stripe rev-share, and the token layer are later
+phases — not built yet.
+
+## Stack
+
+- **Next.js 15** (App Router) — marketing page + app routes, deployed on Vercel
+- **Supabase** — Postgres + Auth (email magic-link) + Row Level Security
+- `@supabase/ssr` for cookie-based session handling across server/client
+
+## Local setup
+
+1. **Install deps**
+   ```bash
+   npm install
+   ```
+
+2. **Create a Supabase project** (supabase.com) and grab its API values from
+   **Project Settings → API**.
+
+3. **Configure env.** Copy the example and fill it in:
+   ```bash
+   cp .env.local.example .env.local
+   ```
+   | Var | Value |
+   |---|---|
+   | `NEXT_PUBLIC_SUPABASE_URL` | your project URL |
+   | `NEXT_PUBLIC_SUPABASE_ANON_KEY` | your anon/public key |
+   | `NEXT_PUBLIC_SITE_URL` | `http://localhost:3000` locally |
+   | `SUPABASE_SERVICE_ROLE_KEY` | leave blank for Phase 1 |
+
+   `.env.local` is gitignored. Never commit real keys — especially the service role key.
+
+4. **Run the migration.** In the Supabase dashboard → **SQL Editor**, paste and
+   run [`supabase/migrations/0001_init.sql`](supabase/migrations/0001_init.sql).
+   This creates the `profiles` + `referrals` tables, the code generator, the
+   signup trigger, the `attribute_referral` / `my_referral_count` RPCs, and RLS.
+
+5. **Configure Auth redirect.** In Supabase → **Authentication → URL
+   Configuration**, add `http://localhost:3000/**` (and your Vercel domain) to
+   **Redirect URLs** so magic links return to `/auth/callback`.
+
+6. **Run it**
+   ```bash
+   npm run dev   # http://localhost:3000
+   ```
+
+## Useful commands
+
+| Command | What |
+|---|---|
+| `npm run dev` | Dev server |
+| `npm run build` | Production build |
+| `npm run start` | Serve the production build |
+| `npm run typecheck` | `tsc --noEmit` |
+| `npm run lint` | Next/ESLint |
+
+## How referral attribution works (the part that's now real)
+
+1. A visitor lands on `/?ref=SKXXXXXX`. **Middleware** (`middleware.ts` →
+   `lib/supabase/middleware.ts`) validates the code and stores it in a
+   first-party `sk_ref` cookie (30 days).
+2. They sign up at `/signup` (email magic-link). Supabase's `on_auth_user_created`
+   trigger auto-creates a `profiles` row with a unique server-generated code.
+3. On return to `/auth/callback`, after the session is established, the route
+   reads `sk_ref` and calls `attribute_referral(p_code)`. The RPC enforces
+   **invalid-code**, **self-referral**, and **double-attribution** guards
+   server-side, writes a `referrals` row, then the cookie is cleared.
+4. `/dashboard` shows the user's **real** code, share link, and live recruit
+   count (`my_referral_count`) — backed by the DB, not random client noise.
+
+## End-to-end test
+
+1. Sign up as **User A** (incognito window 1) at `/signup`. Open `/dashboard`,
+   copy A's referral link (`/?ref=SK…`).
+2. In a **fresh** incognito window 2, open A's link, then sign up as **User B**
+   (different email).
+3. Check results:
+   - A new row exists in `public.referrals` (`referrer_id` = A, `referred_id` = B).
+   - A's `/dashboard` "Kings Recruited" count is now **1**.
+   - B's `profiles.referred_by` = A.
+4. Negative cases (should all be silently rejected, no error to the user):
+   - **Self-referral:** open your own `?ref=` link, sign up with that same
+     account email → no `referrals` row.
+   - **Double-signup / re-attribution:** sign in again as B with a different
+     `?ref=` → still only one referral row for B (`unique(referred_id)`).
+   - **Invalid code:** `/?ref=SKZZZZZZ` (nonexistent) → ignored.
+
+## Project layout
+
+```
+app/
+  page.tsx              Marketing landing (server component; auth-aware Recruit card)
+  marketing.css         All landing styles (migrated from the old index.html)
+  auth.css              Login / signup / dashboard styles
+  login/  signup/       Magic-link auth (AuthForm)
+  auth/callback/        Code exchange + referral attribution + signup-IP capture
+  auth/signout/         POST sign-out
+  dashboard/            Real code + share link + live referral count (protected)
+components/             AuthForm, DashboardClient, LandingEffects, BeehiivForm
+lib/supabase/           client.ts (browser), server.ts (RSC/route), middleware.ts (session)
+middleware.ts           Session refresh, ?ref capture, /dashboard guard, IP rate-limit
+supabase/migrations/    0001_init.sql — run this in Supabase
+public/                 Images (copied from the original files/ dir)
+files/                  Original static index.html kept for reference (not served)
+```
+
+## Known limitations (Phase 1)
+
+- **Rate limiting is best-effort.** The in-memory IP limiter in `middleware.ts`
+  is per-instance and resets on cold start — it only blunts crude single-source
+  farming. Back it with Upstash Redis / Vercel KV for real abuse resistance. The
+  hard guarantees live in the DB constraints (`unique(referred_id)`, self-ref check).
+- **`signup_fingerprint`** column exists but is not yet populated (IP is captured
+  at callback; device fingerprinting is a later anti-abuse add).
+- The `update own profile` RLS policy (as specified) lets a user update their own
+  row broadly. The referral *ledger* is the source of truth and is insert-only via
+  the RPC, so recruit counts can't be spoofed this way — but consider a column
+  guard before Phase 3 (real money).

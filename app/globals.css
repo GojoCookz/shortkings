@@ -1,0 +1,13 @@
+/* Global reset + base. The full theme (vars, components) lives in marketing.css,
+   which is imported alongside this file in the root layout. */
+*, *::before, *::after { box-sizing: border-box; }
+html, body { margin: 0; padding: 0; }
+html { scroll-behavior: smooth; }
+body {
+  font-family: 'Inter', sans-serif;
+  background: #0a0a12;
+  color: #f0eef5;
+  line-height: 1.6;
+  -webkit-font-smoothing: antialiased;
+}
+a { color: #ffd700; }
