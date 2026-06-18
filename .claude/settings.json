@@ -27,7 +27,9 @@
       "Bash(node -e \"try{console.log\\('auth-js', require\\('@supabase/auth-js/package.json'\\).version\\)}catch\\(e\\){console.log\\('auth-js: n/a'\\)}\")",
       "Bash(node -e \"console.log\\('tweetnacl', require\\('tweetnacl/package.json'\\).version\\)\")",
       "Bash(node -e \"console.log\\('bs58', require\\('bs58/package.json'\\).version\\)\")",
-      "Bash(echo \"=== TSC EXIT: $? ===\")"
+      "Bash(echo \"=== TSC EXIT: $? ===\")",
+      "Bash(curl -s https://nsgfphxtclkbsznwuzfe.supabase.co/auth/v1/settings -H 'apikey: sb_publishable_94_E-Ppi5Dj2lg8eept8dQ__oByociH')",
+      "Bash(python -m json.tool)"
     ]
   }
 }
