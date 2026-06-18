@@ -1,9 +1,14 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
+import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { PublicKey } from "@solana/web3.js";
 import { useConnection, useWallet } from "@solana/wallet-adapter-react";
 import { useWalletModal } from "@solana/wallet-adapter-react-ui";
+import { createClient } from "@/lib/supabase/client";
+import { signInWithWallet } from "@/lib/supabase/walletSignIn";
+import { useSupabaseSession } from "@/components/useSupabaseSession";
 
 // $SHORT SPL token mint
 const SHORT_MINT = new PublicKey("A8cMYsw7YaGmB1htaeF9bww4nGjN1czti5RNh2viBAGS");
@@ -22,17 +27,62 @@ function shortAddr(addr: string) {
 }
 
 export default function WalletButton() {
+  const router = useRouter();
   const { connection } = useConnection();
-  const { publicKey, connected, connecting, disconnect } = useWallet();
+  const wallet = useWallet();
+  const { publicKey, connected, connecting, disconnect } = wallet;
   const { setVisible } = useWalletModal();
+  const { user } = useSupabaseSession();
 
   const [mounted, setMounted] = useState(false);
   const [balance, setBalance] = useState<number | null>(null);
   const [loadingBalance, setLoadingBalance] = useState(false);
+  const [signing, setSigning] = useState(false);
+  const [signError, setSignError] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
+  // The wallet address bound to the active Supabase session (profiles.wallet_address).
+  // undefined = not loaded yet, null = none on record.
+  const [boundWallet, setBoundWallet] = useState<string | null | undefined>(undefined);
   const wrapRef = useRef<HTMLDivElement>(null);
+  const wasConnected = useRef(false);
 
   useEffect(() => setMounted(true), []);
+
+  // Resolve the session's bound wallet, and stamp it on first sign-in if missing.
+  useEffect(() => {
+    if (!user) {
+      setBoundWallet(undefined);
+      return;
+    }
+    let cancelled = false;
+    (async () => {
+      const supabase = createClient();
+      const read = async () =>
+        (await supabase.from("profiles").select("wallet_address").eq("id", user.id).single()).data
+          ?.wallet_address ?? null;
+      let addr = await read();
+      if (!addr && connected && publicKey) {
+        await supabase.rpc("set_wallet_address", { p_addr: publicKey.toBase58() });
+        addr = await read();
+      }
+      if (!cancelled) setBoundWallet(addr);
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [user, connected, publicKey]);
+
+  // If a wallet-bound session loses its wallet (disconnected/locked outside the
+  // app), sign out so the UI doesn't claim "logged out" while the session lives.
+  useEffect(() => {
+    if (wasConnected.current && !connected && user && boundWallet) {
+      createClient()
+        .auth.signOut()
+        .then(() => router.refresh())
+        .catch(() => {});
+    }
+    wasConnected.current = connected;
+  }, [connected, user, boundWallet, router]);
 
   // Fetch $SHORT balance whenever the connected wallet changes.
   useEffect(() => {
@@ -53,7 +103,7 @@ export default function WalletButton() {
         setBalance(total);
       })
       .catch(() => {
-        if (!cancelled) setBalance(null); // RPC error -> show fallback label
+        if (!cancelled) setBalance(null);
       })
       .finally(() => {
         if (!cancelled) setLoadingBalance(false);
@@ -77,10 +127,29 @@ export default function WalletButton() {
 
   const openConnectModal = useCallback(() => setVisible(true), [setVisible]);
 
-  const onDisconnect = useCallback(() => {
+  const doSignIn = useCallback(async () => {
+    setSigning(true);
+    setSignError(false);
+    try {
+      await signInWithWallet(wallet);
+      router.refresh();
+    } catch {
+      setSignError(true);
+    } finally {
+      setSigning(false);
+    }
+  }, [wallet, router]);
+
+  const onDisconnect = useCallback(async () => {
     setMenuOpen(false);
+    try {
+      await createClient().auth.signOut();
+    } catch {
+      /* ignore */
+    }
     disconnect().catch(() => {});
-  }, [disconnect]);
+    router.refresh();
+  }, [disconnect, router]);
 
   const copyAddress = useCallback(() => {
     if (publicKey) navigator.clipboard.writeText(publicKey.toBase58());
@@ -96,24 +165,30 @@ export default function WalletButton() {
     );
   }
 
+  // 1) No wallet connected → open the wallet picker.
   if (!connected) {
     return (
-      <button
-        className="btn btn-gold topnav-cta wallet-btn"
-        type="button"
-        onClick={openConnectModal}
-        disabled={connecting}
-      >
+      <button className="btn btn-gold topnav-cta wallet-btn" type="button" onClick={openConnectModal} disabled={connecting}>
         {connecting ? "Connecting…" : "Connect"}
       </button>
     );
   }
 
-  const balanceLabel = loadingBalance
-    ? "… SHORT"
-    : balance == null
-      ? "SHORT"
-      : `${formatAmount(balance)} SHORT`;
+  // The connected wallet doesn't match the wallet that owns the session
+  // (user switched accounts in their wallet) → require a re-sign as the new one.
+  const mismatch = !!(user && publicKey && boundWallet && publicKey.toBase58() !== boundWallet);
+
+  // 2) Connected but not signed in (or signed in as a different wallet) → sign.
+  if (!user || mismatch) {
+    return (
+      <button className="btn btn-gold topnav-cta wallet-btn" type="button" onClick={doSignIn} disabled={signing}>
+        {signing ? "Sign…" : signError ? "Retry sign-in" : "Sign In"}
+      </button>
+    );
+  }
+
+  // 3) Signed in → show balance + dropdown.
+  const balanceLabel = loadingBalance ? "… SHORT" : balance == null ? "SHORT" : `${formatAmount(balance)} SHORT`;
 
   return (
     <div className="wallet-wrap" ref={wrapRef}>
@@ -127,9 +202,13 @@ export default function WalletButton() {
       </button>
       {menuOpen && (
         <div className="wallet-menu" role="menu">
-          <div className="wallet-menu-addr">
-            {publicKey ? shortAddr(publicKey.toBase58()) : ""}
-          </div>
+          <div className="wallet-menu-addr">{publicKey ? shortAddr(publicKey.toBase58()) : "Signed in"}</div>
+          <Link className="wallet-menu-item" href="/dashboard" onClick={() => setMenuOpen(false)}>
+            Dashboard
+          </Link>
+          <a className="wallet-menu-item" href="#tasks" onClick={() => setMenuOpen(false)}>
+            Tasks &amp; XP
+          </a>
           <button className="wallet-menu-item" type="button" onClick={copyAddress}>
             Copy address
           </button>

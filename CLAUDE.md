@@ -49,6 +49,12 @@ Three entry points in [lib/supabase/](lib/supabase/) — use the right one:
 
 The top-right nav "Connect" button ([components/WalletButton.tsx](components/WalletButton.tsx)) uses the **Solana Wallet Adapter** — note $SHORT is a **Solana** token, so this is *not* RainbowKit/EVM. Wallet context is app-wide via [components/SolanaProvider.tsx](components/SolanaProvider.tsx) (wrapped around `{children}` in the layout); wallets are auto-detected through the Wallet Standard (empty `wallets={[]}` array — don't hardcode adapters). Connected, the button reads the wallet's balance of the $SHORT mint and shows it formatted (`8.4M SHORT`). RPC endpoint is `NEXT_PUBLIC_SOLANA_RPC` (blank → public mainnet-beta, rate-limited — use Helius/QuickNode in prod). The mint address is duplicated in `WalletButton.tsx` as a `PublicKey` and as the bags.fm contract string in `page.tsx` — keep them in sync.
 
+## Wallet sign-in & Tasks/XP (Phase 2)
+
+**Wallet sign-in is the primary login**, layered on the same wallet adapter. [components/WalletButton.tsx](components/WalletButton.tsx) goes Connect → **Sign In** → balance/dropdown; "Sign In" calls `supabase.auth.signInWithWeb3({ chain:'solana', wallet })` ([lib/supabase/walletSignIn.ts](lib/supabase/walletSignIn.ts)), which mints a real Supabase session — so the existing `handle_new_user` trigger creates the profile + referral code, unifying wallet + email + referrals + XP on one identity. After sign-in it stamps `profiles.wallet_address` via `set_wallet_address`. Client auth state comes from [components/useSupabaseSession.ts](components/useSupabaseSession.ts) (`getUser` + `onAuthStateChange`). **Requires the Supabase "Web3 Wallet (Solana)" auth provider to be enabled in the dashboard** — without it sign-in errors.
+
+**Tasks/XP** ([supabase/migrations/0002_xp_tasks.sql](supabase/migrations/0002_xp_tasks.sql), [components/TasksSection.tsx](components/TasksSection.tsx)): the `#tasks` section (next to Perks). The **`task_completions` ledger is the source of truth for XP**; the `tasks` table is the catalog. **All awards go through the `complete_task` security-definer RPC** — XP amount comes from the catalog, never the client, and frequency is enforced by `period_key` (`'once'` / UTC `YYYY-MM-DD` / epoch for cooldown) + `unique(user_id, task_key, period_key)`. `my_tasks()` returns the board + per-user state; `my_xp()` sums the ledger. Don't move award/frequency logic to the client. Tweet/follow/join tasks are honor-based (no X/TG API); only daily check-in is truly time-gated.
+
 ## Styling
 
 Plain CSS, no framework. The theme (CSS variables, all landing components) is in [app/marketing.css](app/marketing.css) — migrated verbatim from the original `index.html` `<style>` blocks, including the formerly-inline dex-embed / earnings-panel / join-grid styles. Auth + dashboard styling is in [app/auth.css](app/auth.css). Change colors/fonts via the `:root` vars, not inline.
@@ -62,4 +68,4 @@ Plain CSS, no framework. The theme (CSS variables, all landing components) is in
 
 ## Scope discipline
 
-Do **not** build XP, streaks, Stripe subscriptions/rev-share, or any token/cash-redemption mechanic without an explicit go-ahead — the spec gates the token layer behind legal review (securities / money-transmission / sweepstakes risk). Stay within Phase 1 unless asked.
+Phase 1 (auth + referrals) and Phase 2 (wallet sign-in + tasks/XP) are built. Do **not** build Stripe subscriptions/rev-share (Phase 3) or any **token / cash-redemption** mechanic (Phase 4) without an explicit go-ahead — the spec gates the token layer behind legal review (securities / money-transmission / sweepstakes risk), and that risk gets sharper now that XP exists. XP must stay non-redeemable until then.

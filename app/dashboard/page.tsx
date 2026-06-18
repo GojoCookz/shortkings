@@ -20,18 +20,25 @@ export default async function DashboardPage() {
 
   const { data: profile } = await supabase
     .from("profiles")
-    .select("referral_code")
+    .select("referral_code, wallet_address")
     .eq("id", user.id)
     .single();
 
   const { data: count } = await supabase.rpc("my_referral_count");
+  const { data: xp } = await supabase.rpc("my_xp");
+
+  const identity =
+    user.email ??
+    (profile?.wallet_address
+      ? `${profile.wallet_address.slice(0, 4)}…${profile.wallet_address.slice(-4)}`
+      : "Signed in");
 
   return (
     <div className="dash-wrap">
       <div className="dash-head">
         <div>
           <h1>Your Court 👑</h1>
-          <div className="dash-email">{user.email}</div>
+          <div className="dash-email">{identity}</div>
         </div>
         <div style={{ display: "flex", gap: 10, alignItems: "center" }}>
           <Link className="dash-signout" href="/" style={{ textDecoration: "none" }}>
@@ -43,6 +50,11 @@ export default async function DashboardPage() {
             </button>
           </form>
         </div>
+      </div>
+
+      <div className="dash-card" style={{ textAlign: "center", marginBottom: 18 }}>
+        <div className="dc-label">Short XP</div>
+        <div className="dc-big">{(xp ?? 0).toLocaleString()}</div>
       </div>
 
       {profile?.referral_code ? (

@@ -38,14 +38,20 @@ phases — not built yet.
 
    `.env.local` is gitignored. Never commit real keys — especially the service role key.
 
-4. **Run the migration.** In the Supabase dashboard → **SQL Editor**, paste and
-   run [`supabase/migrations/0001_init.sql`](supabase/migrations/0001_init.sql).
-   This creates the `profiles` + `referrals` tables, the code generator, the
-   signup trigger, the `attribute_referral` / `my_referral_count` RPCs, and RLS.
+4. **Run the migrations.** In the Supabase dashboard → **SQL Editor**, paste and
+   run each in order:
+   - [`supabase/migrations/0001_init.sql`](supabase/migrations/0001_init.sql) —
+     `profiles` + `referrals`, code generator, signup trigger, `attribute_referral`
+     / `my_referral_count` RPCs, RLS.
+   - [`supabase/migrations/0002_xp_tasks.sql`](supabase/migrations/0002_xp_tasks.sql) —
+     `tasks` + `task_completions`, `complete_task` / `my_tasks` / `my_xp` /
+     `set_wallet_address` RPCs, RLS, and the `profiles.wallet_address` column.
 
-5. **Configure Auth redirect.** In Supabase → **Authentication → URL
-   Configuration**, add `http://localhost:3000/**` (and your Vercel domain) to
-   **Redirect URLs** so magic links return to `/auth/callback`.
+5. **Configure Auth.** In Supabase → **Authentication**:
+   - **URL Configuration → Redirect URLs**: add `http://localhost:3000/**` (and
+     your Vercel domain) so email magic links return to `/auth/callback`.
+   - **Sign In / Providers → enable "Web3 Wallet (Solana)"** — **required** for
+     wallet sign-in (`signInWithWeb3`). Without it, wallet login returns an error.
 
 6. **Run it**
    ```bash
@@ -91,6 +97,31 @@ Wallet context is provided app-wide by [components/SolanaProvider.tsx](component
 Balance reads use `NEXT_PUBLIC_SOLANA_RPC` — leave it blank for the public
 endpoint while testing, but set a Helius/QuickNode URL for production (the
 public RPC rate-limits and sometimes blocks browser balance reads).
+
+## Wallet sign-in & Tasks/XP (Phase 2)
+
+**Wallet is the primary login.** The nav button flows Connect → **Sign In** →
+balance. "Sign In" calls `supabase.auth.signInWithWeb3({ chain: 'solana', wallet })`
+([lib/supabase/walletSignIn.ts](lib/supabase/walletSignIn.ts)) — the wallet signs
+a Sign-In-With-Solana message (free, no transaction), Supabase verifies it and
+mints a session, and the existing `handle_new_user` trigger auto-creates the
+profile + referral code. The wallet address is then stamped onto the profile via
+`set_wallet_address`. Email magic-link login still works as a secondary path; a
+session from either is the same account type.
+
+**Tasks/XP** ([components/TasksSection.tsx](components/TasksSection.tsx), section
+`#tasks` next to Perks): signed-in users complete tasks (daily check-in, tweet,
+follow, join TG, share referral) to earn **$SHORT XP**. All award logic is
+server-side in the `complete_task` RPC — the client cannot set XP, claim inactive
+tasks, or bypass the daily/cooldown windows (enforced by `period_key` +
+`unique(user_id, task_key, period_key)`). XP and rank show in the section header
+and on `/dashboard`.
+
+> **Honor-based caveat:** tweet/follow/join completions can't be verified without
+> the X / Telegram APIs, so they're honor-based with frequency limits. Daily
+> check-in is fully time-gated. Sybil farming (one person, many wallets) is the
+> usual memecoin reality — gate high-value tasks behind `$SHORT` holdings or add a
+> captcha when it matters. None of this affects the integrity of the XP *ledger*.
 
 ## End-to-end test
 

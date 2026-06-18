@@ -22,7 +22,12 @@
       "Bash(npm install *)",
       "Bash(grep -E \"\\\\.env\\\\.local$|settings\\\\.local\")",
       "Bash(curl -s https://api.mainnet-beta.solana.com -X POST -H 'Content-Type: application/json' -d '{\"jsonrpc\":\"2.0\",\"id\":1,\"method\":\"getTokenLargestAccounts\",\"params\":[\"A8cMYsw7YaGmB1htaeF9bww4nGjN1czti5RNh2viBAGS\"]}')",
-      "Read(//c/Users/kylep/AppData/Local/Temp/**)"
+      "Read(//c/Users/kylep/AppData/Local/Temp/**)",
+      "Bash(node -e \"console.log\\('supabase-js', require\\('@supabase/supabase-js/package.json'\\).version\\)\")",
+      "Bash(node -e \"try{console.log\\('auth-js', require\\('@supabase/auth-js/package.json'\\).version\\)}catch\\(e\\){console.log\\('auth-js: n/a'\\)}\")",
+      "Bash(node -e \"console.log\\('tweetnacl', require\\('tweetnacl/package.json'\\).version\\)\")",
+      "Bash(node -e \"console.log\\('bs58', require\\('bs58/package.json'\\).version\\)\")",
+      "Bash(echo \"=== TSC EXIT: $? ===\")"
     ]
   }
 }

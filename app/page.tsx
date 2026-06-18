@@ -5,6 +5,7 @@ import { createClient } from "@/lib/supabase/server";
 import LandingEffects from "@/components/LandingEffects";
 import BeehiivForm from "@/components/BeehiivForm";
 import WalletButton from "@/components/WalletButton";
+import TasksSection from "@/components/TasksSection";
 
 const BAGS = "https://bags.fm/A8cMYsw7YaGmB1htaeF9bww4nGjN1czti5RNh2viBAGS";
 const CONTRACT = "A8cMYsw7YaGmB1htaeF9bww4nGjN1czti5RNh2viBAGS";
@@ -128,6 +129,7 @@ export default async function Home() {
         <div className="topnav-logo">$SHORT</div>
         <div className="topnav-links">
           <a href="#perks">Perks</a>
+          <a href="#tasks">Tasks</a>
           <a href="#hotline">Hotline</a>
           <a href="#chart">Chart</a>
           <a href="#charity">Charity</a>
@@ -202,6 +204,16 @@ export default async function Home() {
             </div>
           ))}
         </div>
+      </section>
+
+      {/* ===== 3.5 SHORT TASKS / XP ===== */}
+      <section className="section" id="tasks">
+        <div className="section-tag">Earn while you rep</div>
+        <h2 className="section-title">Short <span className="gold-text">Tasks</span></h2>
+        <p className="section-subtitle">
+          Sign in with your wallet and stack $SHORT XP for showing up, repping on X, and growing the kingdom.
+        </p>
+        <TasksSection />
       </section>
 
       {/* ===== 4. THE HOTLINE ===== */}
